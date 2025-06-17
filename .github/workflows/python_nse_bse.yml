@@ -1,0 +1,28 @@
+name: NSE_BSE_Daily_Trade_Summary
+
+on:
+  schedule:
+    # Runs at 5:30 PM IST every day (IST is UTC+5:30)
+    - cron: '00 12 * * *'  # 12:00 UTC = 17:30 IST
+  workflow_dispatch:  # allows manual trigger from GitHub UI
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run the NSE BSE script
+        run: python NSE_BSE_Combined.py
