@@ -25,4 +25,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run the NSE BSE script
-        run: python NSE BSE Combined.py
+        run: python "NSE BSE Combined.py"
