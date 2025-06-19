@@ -211,4 +211,8 @@ if new_rows:
     combined_df = pd.concat([combined_df, new_df], ignore_index=True)
     combined_df.sort_values("Date", inplace=True)
     combined_df.to_csv(OUTPUT_CSV, index=False)
-    print(f"\n✅ Updated {OUTPUT_CSV}
+    print(f"\n✅ Updated {OUTPUT_CSV} with {len(new_rows)} new entries.")  # <-- fixed line
+else:
+    print("\n✅ No new data to update.")
+
+print("\nProcess completed.")
