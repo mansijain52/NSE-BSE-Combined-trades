@@ -4,28 +4,23 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 import zipfile
-import pytz  # <--- NEW IMPORT
+import pytz
 
 # ------------- CONFIGURATION ------------------
 
 IST = pytz.timezone("Asia/Kolkata")
 
 START_DATE = datetime.strptime("2025-06-02", "%Y-%m-%d")
-START_DATE = IST.localize(START_DATE)  # make aware
+START_DATE = IST.localize(START_DATE)
 
 now_ist = datetime.now(IST)
-
-# Determine if we passed 5:30 PM IST or not
 end_date_candidate = now_ist.replace(hour=19, minute=30, second=0, microsecond=0)
 
 if now_ist >= end_date_candidate:
-    # After 5:30 PM IST, we can fetch today's data
     END_DATE = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
 else:
-    # Before 5:30 PM IST, fetch only up to yesterday
     END_DATE = (now_ist - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
-# Convert both to naive datetime for consistent comparison and iteration
 START_DATE = START_DATE.replace(tzinfo=None)
 END_DATE = END_DATE.replace(tzinfo=None)
 
@@ -39,31 +34,17 @@ BSE_BASE_URL = "https://www.bseindia.com/download/Bhavcopy/Derivative/MS_{}.csv"
 BSE_CACHE_DIR = "bse_csv_cache"
 BSE_COLUMN = "No. of Trades"
 
-# Combined output file
 OUTPUT_CSV = r"C:\Users\rachit.jain\Desktop\Python projects\Exisitng project\NSE BSE Combined\Combined\combined_nse_bse_trade_summary.csv"
 
-
 RETRIES = 3
-TIMEOUT = 60  # seconds
+TIMEOUT = 60
 
-# Common trading holidays 2025 (adjust as needed)
 TRADING_HOLIDAYS_2025 = {
-    "2025-01-01",
-    "2025-01-14",
-    "2025-03-29",
-    "2025-04-01",
-    "2025-04-14",
-    "2025-04-18",
-    "2025-05-01",
-    "2025-08-15",
-    "2025-09-17",
-    "2025-10-02",
-    "2025-11-01",
-    "2025-11-04",
-    "2025-12-25",
+    "2025-01-01", "2025-01-14", "2025-03-29", "2025-04-01", "2025-04-14",
+    "2025-04-18", "2025-05-01", "2025-08-15", "2025-09-17",
+    "2025-10-02", "2025-11-01", "2025-11-04", "2025-12-25"
 }
 
-# Browser-like headers for all requests
 DEFAULT_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -78,11 +59,9 @@ BSE_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
 }
 
-# Create cache directories if not exist
 os.makedirs(NSE_CACHE_DIR, exist_ok=True)
 os.makedirs(BSE_CACHE_DIR, exist_ok=True)
 
-# Load existing combined summary
 if os.path.exists(OUTPUT_CSV):
     combined_df = pd.read_csv(OUTPUT_CSV, parse_dates=["Date"])
     processed_dates = set(combined_df["Date"].dt.strftime("%Y-%m-%d"))
@@ -90,12 +69,22 @@ else:
     combined_df = pd.DataFrame(columns=["Date", "NSE_NO_OF_TRADE", "BSE_No_of_Trades"])
     processed_dates = set()
 
-
+# ----------------- PATCHED FUNCTION ------------------
 def download_with_retries(url, headers=None, retries=RETRIES, timeout=TIMEOUT, backoff=10):
+    session = requests.Session()
     merged_headers = {**DEFAULT_HEADERS, **(headers or {})}
+    session.headers.update(merged_headers)
+
+    # NSE-specific: visit homepage to get cookies
+    if "nsearchives.nseindia.com" in url:
+        try:
+            session.get("https://www.nseindia.com", timeout=10)
+        except Exception as e:
+            print(f"⚠️ Warning: Could not fetch NSE homepage cookies: {e}")
+
     for attempt in range(retries):
         try:
-            response = requests.get(url, headers=merged_headers, timeout=timeout)
+            response = session.get(url, timeout=timeout)
             if response.status_code == 200:
                 return response.content
             else:
@@ -105,17 +94,13 @@ def download_with_retries(url, headers=None, retries=RETRIES, timeout=TIMEOUT, b
         wait_time = backoff * (2 ** attempt)
         print(f"Waiting {wait_time}s before retrying...")
         time.sleep(wait_time)
-    return None
 
+    return None
+# ----------------------------------------------------
 
 def is_trading_day(date_obj):
     iso_date = date_obj.strftime("%Y-%m-%d")
-    if date_obj.weekday() >= 5:  # Saturday or Sunday
-        return False
-    if iso_date in TRADING_HOLIDAYS_2025:
-        return False
-    return True
-
+    return date_obj.weekday() < 5 and iso_date not in TRADING_HOLIDAYS_2025
 
 def process_nse_day(date_obj):
     iso_date = date_obj.strftime("%Y-%m-%d")
@@ -140,7 +125,7 @@ def process_nse_day(date_obj):
         with zipfile.ZipFile(cache_path, 'r') as z:
             inner_file = f"op{date_str}.csv"
             if inner_file not in z.namelist():
-                inner_file = f"op{date_str}.dat"  # fallback
+                inner_file = f"op{date_str}.dat"
             if inner_file not in z.namelist():
                 print(f"NSE: {inner_file} not found in ZIP. Skipping...")
                 return None
@@ -157,7 +142,6 @@ def process_nse_day(date_obj):
     except Exception as e:
         print(f"NSE: Error processing {filename}: {e}")
         return None
-
 
 def process_bse_day(date_obj):
     iso_date = date_obj.strftime("%Y-%m-%d")
@@ -192,12 +176,11 @@ def process_bse_day(date_obj):
         print(f"BSE: Error processing {filename}: {e}")
         return None
 
-
 # ----------------- MAIN PROCESS ------------------
 
 new_rows = []
-
 current_date = START_DATE
+
 while current_date <= END_DATE:
     iso_date = current_date.strftime("%Y-%m-%d")
     if not is_trading_day(current_date):
@@ -221,16 +204,11 @@ while current_date <= END_DATE:
 
     processed_dates.add(iso_date)
     current_date += timedelta(days=1)
-    time.sleep(1)  # polite wait between requests
+    time.sleep(1)
 
-# Append and save combined data
 if new_rows:
     new_df = pd.DataFrame(new_rows)
     combined_df = pd.concat([combined_df, new_df], ignore_index=True)
     combined_df.sort_values("Date", inplace=True)
     combined_df.to_csv(OUTPUT_CSV, index=False)
-    print(f"\n✅ Updated {OUTPUT_CSV} with {len(new_rows)} new entries.")
-else:
-    print("\n✅ No new data to update.")
-
-print("\nProcess completed.")
+    print(f"\n✅ Updated {OUTPUT_CSV}
