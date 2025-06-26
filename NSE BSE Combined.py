@@ -81,6 +81,11 @@ def download_with_retries(url, headers=None, retries=RETRIES, timeout=TIMEOUT, b
             session.get("https://www.nseindia.com", timeout=10)
         except Exception as e:
             print(f"⚠️ Warning: Could not fetch NSE homepage cookies: {e}")
+    else 
+         try:
+             session.get("https://www.bseindia.com", timeout=10)
+         except Exception as e:
+             printf(f" Warning: Could nor fetch BSE homepage : {e}")
 
     for attempt in range(retries):
         try:
