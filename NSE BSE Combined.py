@@ -207,11 +207,15 @@ while current_date <= END_DATE:
     time.sleep(1)
 
 if new_rows:
-    new_df = pd.DataFrame(new_rows)
-    combined_df = pd.concat([combined_df, new_df], ignore_index=True)
-    combined_df.sort_values("Date", inplace=True)
-    combined_df.to_csv(OUTPUT_CSV, index=False)
-    print(f"\n✅ Updated {OUTPUT_CSV} with {len(new_rows)} new entries.")  # <-- fixed line
+    try:
+        new_df = pd.DataFrame(new_rows)
+        combined_df = pd.concat([combined_df, new_df], ignore_index=True)
+        combined_df.sort_values("Date", inplace=True)
+        combined_df.to_csv(OUTPUT_CSV, index=False)
+        print(f"\n✅ Updated {OUTPUT_CSV} with {len(new_rows)} new entries.")  # <-- fixed line
+    
+    except Exception as e:
+        print(f"Error writing to CSV: {e}")
 else:
     print("\n✅ No new data to update.")
 
