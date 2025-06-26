@@ -195,7 +195,8 @@ while current_date <= END_DATE:
 
     nse_total = process_nse_day(current_date)
     bse_total = process_bse_day(current_date)
-
+    print(f"\n✅ nse_total {nse_total} ")  # <-- fixed line
+    print(f"\n✅ bse_total {bse_total} ")  # <-- fixed line
     new_rows.append({
         "Date": iso_date,
         "NSE_NO_OF_TRADE": nse_total if nse_total is not None else pd.NA,
@@ -207,14 +208,11 @@ while current_date <= END_DATE:
     time.sleep(1)
 
 if new_rows:
-    try:
-        new_df = pd.DataFrame(new_rows)
-        combined_df = pd.concat([combined_df, new_df], ignore_index=True)
-        combined_df.sort_values("Date", inplace=True)
-        combined_df.to_csv(OUTPUT_CSV, index=False)
-        print(f"\n✅ Updated {OUTPUT_CSV} with {len(new_rows)} new entries.")  # <-- fixed line
-    except Exception as e:
-        print(f"Error writing to CSV: {e}")
+    new_df = pd.DataFrame(new_rows)
+    combined_df = pd.concat([combined_df, new_df], ignore_index=True)
+    combined_df.sort_values("Date", inplace=True)
+    combined_df.to_csv(OUTPUT_CSV, index=False)
+    print(f"\n✅ Updated {OUTPUT_CSV} with {len(new_rows)} new entries.")  # <-- fixed line
 else:
     print("\n✅ No new data to update.")
     print("\nProcess completed.")
