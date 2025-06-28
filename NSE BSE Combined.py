@@ -196,7 +196,7 @@ while current_date <= END_DATE:
     nse_total = process_nse_day(current_date)
     bse_total = process_bse_day(current_date)
     print(f"\n✅ nse_total {nse_total} ")  # <-- fixed line
-    print(f"\n✅ bse_total {bse_total} ")  # <-- fixed line
+    ## print(f"\n✅ bse_total {bse_total} ")  # <-- fixed line
     new_rows.append({
         "Date": iso_date,
         "NSE_NO_OF_TRADE": nse_total if nse_total is not None else pd.NA,
