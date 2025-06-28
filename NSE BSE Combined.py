@@ -34,7 +34,10 @@ BSE_BASE_URL = "https://www.bseindia.com/download/Bhavcopy/Derivative/MS_{}.csv"
 BSE_CACHE_DIR = "bse_csv_cache"
 BSE_COLUMN = "No. of Trades"
 
-OUTPUT_CSV = r"C:\Users\mansijain\AppData\Local\Apps\2.0\Combined\combined_nse_bse_trade_summary.csv"
+
+current_path = os.getcwd()
+csv_path = os.path.join(current_path, 'sample.csv')
+OUTPUT_CSV = csv_path
 
 RETRIES = 3
 TIMEOUT = 60
